@@ -3,6 +3,7 @@
 #' @param cases  a factor of predicted classes 
 #' @param controls  a factor of classes to be used as the true results
 #' @param label image main label
+#' @param xlab label for x axis
 #' @param xlim x axis extend
 #' @param abline draws vertical abline to indicate best threshold
 #' @importFrom pROC roc
@@ -13,7 +14,8 @@
 #' controls <- rnorm(300,1,1.5)
 #' makeROCplot(cases,controls)
 #' 
-makeROCplot <- function(cases,controls,label="",xlim=NULL,abline= NULL){
+makeROCplot <- function(cases,controls,label="",
+                        xlab="P(X==1)",xlim=NULL,abline= NULL){
   graphics::par(mfrow=c(1,2))
   ll = range(c(cases,controls))
   if(is.null(xlim)){
@@ -23,7 +25,7 @@ makeROCplot <- function(cases,controls,label="",xlim=NULL,abline= NULL){
   dt = stats::density(cases)
   dm = stats::density(controls)
   y = c(dt$y, dm$y)
-  graphics::plot(dt, col=1,xlab="log2(M/T)",main=label, xlim=xlim, ylim=c(0,max(y)))
+  graphics::plot(dt, col=1,xlab=xlab,main=label, xlim=xlim, ylim=c(0,max(y)))
   lines(dm, col=2)
   if(!is.null(abline)){
     graphics::abline(v=abline,col=3)
@@ -53,7 +55,7 @@ determineCut<-function(cases, controls , plot=FALSE, scanstep=0.01){
   thresh <- seq(min(data)+ scanstep*5 , max(data) - scanstep*5, by=scanstep)
   accur <- NULL
   for(thr in thresh){
-    tmp <- caret::confusionMatrix(as.numeric(data < thr), references )
+    tmp <- caret::confusionMatrix(as.factor(as.numeric(data < thr)), as.factor(references) )
     accur <- c(accur,tmp$overall["Accuracy"])
   }
   cut <-thresh[which.max(accur)]

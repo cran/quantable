@@ -1,5 +1,6 @@
 #' heatmap2 facade
 #' @export
+#' @importFrom gplots heatmap.2
 #' @param pln or dataframe with numerical values
 #' @param distf distance function
 #' @param hclustf clustering function
@@ -7,6 +8,7 @@
 #' @param main title
 #' @param labRow row labels
 #' @param margins control margins of heatmap
+#' @param scale c(row, column or none)
 #' @param ... other parameters to heatmap.2
 #' @examples
 #' tmp = matrix(rep((1:100),times = 4) + rnorm(100*4,0,3),ncol=4)
@@ -23,9 +25,9 @@ simpleheatmap <- function(pln,
                          hclustf=hclust,
                          labRow="",
                          palette=getBlueWhiteRed(),
-                         margins=c(5,5),...)
+                         margins=c(5,5),scale="none",...)
 {
-  heatmap.2( as.matrix(pln) , trace="none" , scale="none" , col=palette ,
+  heatmap.2( as.matrix(pln) , trace="none" , scale=scale  , col=palette ,
                     labRow=labRow,
                     cexRow=0.1 + 1/log10(dim(pln)[1]),
                     cexCol=0.1 + 1/log10(dim(pln)[2]),

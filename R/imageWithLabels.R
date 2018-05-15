@@ -1,10 +1,27 @@
-#Copy of http://stackoverflow.com/questions/20977477/how-to-assign-a-specific-color-to-na-in-an-image-plot
-image.nan <- function(z,
+#' Copy of http://stackoverflow.com/questions/20977477/how-to-assign-a-specific-color-to-na-in-an-image-plot
+#' 
+#' @param z matrix
+#' @param col color gradient
+#' @param zlim range
+#' @param na.color for displaying NA's.
+#' @param outside.below.color color below zlim
+#' @param outside.above.color color above zlim
+#' @param breaks do not remember (see usage in imageWithLabelsNoLayout)
+#' @param textB display numerical values of the matrix as text, default NULL no
+#' @param text.cex size of numerical values
+#' @param ... further parameters for plot method
+#' @export
+#' @importFrom reshape2 melt
+#' 
+image_nan <- function(z,
                       col =heat.colors(12),
                       zlim=NULL,
                       na.color='gray',
                       outside.below.color='green',
-                      outside.above.color='green',breaks,...)
+                      outside.above.color='green',
+                      breaks,
+                      textB=NULL,
+                      text.cex=0.8, ...)
 {
   # TODO: add checks for missing values
   z <- as.matrix(z)
@@ -36,6 +53,17 @@ image.nan <- function(z,
   }else{
     image(z=z, zlim=zlim, col=col, ...) # we finally call image(...)
   }
+  if(!is.null(textB)){
+    zz <- z
+    rownames(zz) <- NULL
+    colnames(zz) <- NULL
+    zz <<- zz
+
+    lmatrix <- reshape2::melt(zz)
+    x <- ((lmatrix$Var1-1) /max(lmatrix$Var1))
+    y <- ((lmatrix$Var2-1) /max(lmatrix$Var2))
+    graphics::text(x * 1/max(x), y * 1/max(y),labels = round(lmatrix$value, digits=textB),cex = text.cex)
+  }
 }
 
 #' image plot with labels
@@ -52,19 +80,23 @@ image.nan <- function(z,
 #' @param ylab y label
 #' @param zlim z value range, default NULL an determined from x
 #' @param na.color na.color
+#' @param textB indicate if correlation (text) should be added to heatmap. If - with how many digits. default = NULL (do not add).
 #' @param ... passed to image
 #' @export
 #' @examples
 #' x = matrix(rnorm(20*30),ncol=20)
 #' rownames(x) <- 1:30
 #' colnames(x) <- letters[1:20]
-#' imageWithLabelsNoLayout(x,col = heat.colors(13))
+#' quantable:::image_nan(x,textB=1)
+#' 
+#' imageWithLabelsNoLayout(x,col = heat.colors(13),textB=2, text.cex=0.6)
 #' imageWithLabelsNoLayout(x,col = heat.colors(12),breaks=seq(min(x),max(x),length=13))
 #' x[3,3] <- NA
 #' imageWithLabelsNoLayout(x,col = heat.colors(12),
 #' breaks=seq(min(x,na.rm=TRUE),
 #' max(x,na.rm=TRUE),length=13))
 #' imageWithLabelsNoLayout(x,xlab="ttt",ylab="bbb")
+#' imageWithLabelsNoLayout(x,xlab="ttt",ylab="bbb", zlim=c(0,2))
 #' 
 imageWithLabelsNoLayout = function(x,
                                    col.labels=colnames(x),
@@ -76,11 +108,14 @@ imageWithLabelsNoLayout = function(x,
                                    xlab='',
                                    ylab='',
                                    zlim=NULL,
-                                   na.color='gray',...){
+                                   na.color='gray',
+                                   textB=NULL,...){
   if(!is.null(zlim)){
-    image.nan(x, axes = F, main = main, col=col,xlab=xlab, ylab=ylab, zlim=zlim, ...=...)
+    image_nan(x, axes = F, main = main, col=col,xlab=xlab, ylab=ylab, zlim=zlim,
+              textB=textB, ...=...)
   }else{
-    image.nan(x, axes = F, main = main, col=col,xlab=xlab, ylab=ylab, ...=...)
+    image_nan(x, axes = F, main = main, col=col,xlab=xlab, ylab=ylab, 
+              textB=textB, ...=...)
   }
   graphics::axis( 2, at=seq(0,1,length=length((col.labels))) , labels=col.labels,cex.axis=cex.axis, las=2, cex=cex )
   graphics::axis( 1, at=seq(0,1,length=length((row.labels))) , labels=row.labels,cex.axis=cex.axis, las=2, cex=cex )
@@ -95,22 +130,27 @@ imageWithLabelsNoLayout = function(x,
 #' @param breaks optional argument passed to image (see image for more details)
 #' @export
 #' @examples
-#' x = matrix(rnorm(20*30),ncol=20)
+#' x = matrix(rnorm(20*30, 5),ncol=20)
 #' rownames(x) <- 1:30
 #' colnames(x) <- letters[1:20]
 #' imageColorscale(x)
-imageColorscale = function(x, cex = 1,
+#' imageColorscale(x,col=getBlueWhiteRed(), zlim=c(-1,1))
+#' imageColorscale(x,col=getBlueWhiteRed(), zlim=c(-5,5))
+imageColorscale <- function(x, cex = 1,
                            cex.axis = 0.5,
                            col = heat.colors(12),
                            digits=2,
                            zlim=NULL, breaks ){
-  colorlevels = seq(min(x,na.rm = TRUE),max(x,na.rm = TRUE),length=length(col))
   if(!is.null(zlim)){
-    image(1, seq(0,1,length=length(colorlevels)),
+    colorlevels = seq(zlim[1],zlim[2],length=length(col))
+    
+        image(1, seq(0,1,length=length(colorlevels)),
           matrix(data=colorlevels, nrow=1),
           col=col,xlab="",ylab="",
           axes=FALSE,zlim=zlim)
   }else{
+    colorlevels = seq(min(x,na.rm = TRUE),max(x,na.rm = TRUE),length=length(col))
+    
     image(1, seq(0,1,length=length(colorlevels)),
           matrix(data=colorlevels, nrow=1),
           col=col,xlab="",ylab="",
@@ -140,6 +180,7 @@ imageColorscale = function(x, cex = 1,
 #' @param ylab y label
 #' @param zlim z value range, default NULL an determined from x
 #' @param na.color na.color
+#' @param widths controls the size of left and right pane
 #' @param ... passed to image
 #' @export
 #' @examples
@@ -164,9 +205,9 @@ imageWithLabels <- function(x,
                            xlab='',
                            ylab='',
                            zlim=NULL,
-                           na.color='gray',...)
+                           na.color='gray',widths=c(4,1),...)
 {
-  layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=c(3,1), heights=c(1,1))
+  layout(matrix(data=c(1,2), nrow=1, ncol=2), widths=widths, heights=c(1,1))
   graphics::par(mar=marLeft)
   imageWithLabelsNoLayout(x,col.labels=col.labels,
                           row.labels=row.labels,
